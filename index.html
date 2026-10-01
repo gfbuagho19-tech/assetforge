@@ -1,0 +1,348 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080B14">
+<title>Assetforge — On-chain Launchpad</title>
+<style>
+:root {
+  --bg: #080b14;
+  --panel: #111625;
+  --border: #252c40;
+  --purple: #8b5cf6;
+  --text: #f5f5ff;
+  --muted: #9ba5bd;
+  --green: #4ade80;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, Arial, sans-serif;
+}
+button, input, textarea, select { font: inherit; }
+button { cursor: pointer; }
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 17px 5%;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+.logo { font-size: 21px; font-weight: 800; }
+.logo span { color: #a78bfa; }
+.btn {
+  background: var(--purple);
+  color: white;
+  border: 0;
+  border-radius: 10px;
+  padding: 11px 15px;
+  font-weight: 700;
+}
+.btn:hover { filter: brightness(1.15); }
+.secondary {
+  background: #1a2032;
+  border: 1px solid var(--border);
+}
+main { max-width: 1050px; margin: auto; padding: 30px 5%; }
+.hero {
+  padding: 34px 0;
+  background: radial-gradient(ellipse at 70% 15%, #32205e55, transparent 55%);
+}
+.tag {
+  display: inline-block;
+  color: #c4b5fd;
+  background: #8b5cf61c;
+  border: 1px solid #8b5cf644;
+  padding: 7px 11px;
+  border-radius: 30px;
+  font-size: 12px;
+}
+h1 { font-size: clamp(38px, 8vw, 65px); line-height: 1.08; margin: 22px 0 15px; letter-spacing: -2px; }
+h1 span { color: #a78bfa; }
+p { color: var(--muted); line-height: 1.7; }
+.hero p { max-width: 540px; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 23px; }
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 24px 0 35px;
+}
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  padding: 19px;
+  min-width: 0;
+}
+.stat-label { color: var(--muted); font-size: 12px; }
+.stat-value { font-size: 23px; font-weight: 750; margin-top: 8px; }
+h2 { font-size: 23px; margin: 0 0 8px; }
+.section-head { margin: 36px 0 17px; }
+.section-head p { margin: 5px 0; font-size: 14px; }
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+label { display: block; font-size: 13px; margin: 15px 0 7px; color: #d5d9e7; }
+input, textarea, select {
+  width: 100%;
+  background: #090d18;
+  border: 1px solid var(--border);
+  color: white;
+  border-radius: 9px;
+  padding: 12px;
+  outline: none;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--purple);
+}
+.full { width: 100%; margin-top: 17px; }
+.token-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border);
+}
+.token-item:last-child { border: 0; }
+.token-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 39px; height: 39px;
+  background: #292043;
+  border-radius: 12px;
+  margin-right: 10px;
+  font-weight: 800;
+}
+.token-name { font-weight: 700; }
+.token-symbol { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.status { color: var(--green); font-size: 11px; }
+.notice {
+  background: #15162a;
+  border: 1px solid #35305a;
+  color: #c4b5fd;
+  border-radius: 10px;
+  padding: 13px;
+  font-size: 12px;
+  line-height: 1.6;
+  margin-top: 18px;
+}
+footer {
+  border-top: 1px solid var(--border);
+  padding: 26px 5%;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+  margin-top: 45px;
+}
+#message { font-size: 13px; color: #c4b5fd; margin-top: 12px; }
+@media(max-width: 600px) {
+  main { padding: 23px 5%; }
+  .stats { gap: 8px; }
+  .card { padding: 13px; }
+  .stat-value { font-size: 18px; }
+  .stat-label { font-size: 10px; }
+  .layout { grid-template-columns: 1fr; }
+  h1 { letter-spacing: -1.5px; }
+  nav { padding: 14px 4%; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">◈ Asset<span>forge</span></div>
+  <button class="btn" id="walletBtn" onclick="connectWallet()">
+    Connect Wallet
+  </button>
+</nav>
+
+<main>
+  <section class="hero">
+    <div class="tag">✦ ON-CHAIN ASSET LAUNCHPAD</div>
+    <h1>Build.<br>Launch.<br><span>Grow.</span></h1>
+    <p>
+      Your gateway to digital assets.
+      Explore token concepts and build your next project
+      with Assetforge.
+    </p>
+    <div class="actions">
+      <button class="btn" onclick="goTo('create')">
+        Create an Asset ↗
+      </button>
+      <button class="btn secondary" onclick="goTo('explore')">
+        Explore Assets
+      </button>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="card">
+      <div class="stat-label">Assets Created</div>
+      <div class="stat-value" id="assetCount">0</div>
+    </div>
+    <div class="card">
+      <div class="stat-label">Network</div>
+      <div class="stat-value" style="font-size:19px">Solana</div>
+    </div>
+    <div class="card">
+      <div class="stat-label">Platform Fee</div>
+      <div class="stat-value" style="font-size:19px">Demo</div>
+    </div>
+  </section>
+
+  <section id="create">
+    <div class="section-head">
+      <h2>Create your asset</h2>
+      <p>Configure your token concept.</p>
+    </div>
+
+    <div class="card">
+      <form id="tokenForm">
+        <label for="tokenName">Token Name</label>
+        <input id="tokenName" maxlength="40"
+          placeholder="e.g. My Digital Asset" required>
+
+        <label for="symbol">Token Symbol</label>
+        <input id="symbol" maxlength="10"
+          placeholder="e.g. MDA" required>
+
+        <label for="supply">Total Supply</label>
+        <input id="supply" type="number" min="1"
+          max="1000000000000" step="1"
+          placeholder="1000000" required>
+
+        <label for="description">Description</label>
+        <textarea id="description" maxlength="250" rows="3"
+          placeholder="Tell us about your project"></textarea>
+
+        <button class="btn full" type="submit">
+          Preview Asset
+        </button>
+        <div id="message" aria-live="polite"></div>
+      </form>
+
+      <div class="notice">
+        Demo mode: this form creates a local preview only.
+        It does not deploy a token or send a blockchain transaction.
+      </div>
+    </div>
+  </section>
+
+  <section id="explore">
+    <div class="section-head">
+      <h2>Explore Assets</h2>
+      <p>Your locally created demo assets appear here.</p>
+    </div>
+    <div class="card" id="assetList">
+      <p>No assets yet. Create your first preview above.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="logo">◈ Asset<span>forge</span></div>
+  <p>Build responsibly. Verify before you transact.</p>
+  <div>© 2026 Assetforge · Prototype</div>
+</footer>
+
+<script>
+let assets = [];
+let walletConnected = false;
+
+function goTo(id) {
+  document.getElementById(id).scrollIntoView({
+    behavior: "smooth"
+  });
+}
+
+function connectWallet() {
+  document.getElementById("message").textContent =
+    "Wallet integration is not configured yet. Demo mode only.";
+}
+
+document.getElementById("tokenForm").addEventListener(
+  "submit", function(event) {
+    event.preventDefault();
+
+    const name = document.getElementById("tokenName").value.trim();
+    const symbol = document.getElementById("symbol").value
+      .trim().toUpperCase();
+    const supply = Number(document.getElementById("supply").value);
+    const description =
+      document.getElementById("description").value.trim();
+
+    if (!name || !/^[A-Z0-9]{1,10}$/.test(symbol)) {
+      document.getElementById("message").textContent =
+        "Enter a name and a symbol using 1–10 letters or numbers.";
+      return;
+    }
+
+    if (!Number.isSafeInteger(supply) || supply < 1 ||
+        supply > 1000000000000) {
+      document.getElementById("message").textContent =
+        "Enter a valid whole-number supply.";
+      return;
+    }
+
+    assets.push({ name, symbol, supply, description });
+    renderAssets();
+
+    document.getElementById("message").textContent =
+      "Asset preview created successfully! Demo only.";
+
+    this.reset();
+    goTo("explore");
+  }
+);
+
+function renderAssets() {
+  const list = document.getElementById("assetList");
+  document.getElementById("assetCount").textContent = assets.length;
+
+  list.replaceChildren();
+
+  assets.forEach(function(asset) {
+    const item = document.createElement("div");
+    item.className = "token-item";
+
+    const left = document.createElement("div");
+    left.style.display = "flex";
+    left.style.alignItems = "center";
+
+    const icon = document.createElement("span");
+    icon.className = "token-icon";
+    icon.textContent = asset.symbol.slice(0, 2);
+
+    const info = document.createElement("div");
+    const name = document.createElement("div");
+    name.className = "token-name";
+    name.textContent = asset.name;
+
+    const symbol = document.createElement("div");
+    symbol.className = "token-symbol";
+    symbol.textContent = asset.symbol + " · Supply: " +
+      asset.supply.toLocaleString("en-US");
+
+    info.append(name, symbol);
+    left.append(icon, info);
+
+    const status = document.createElement("span");
+    status.className = "status";
+    status.textContent = "DEMO";
+
+    item.append(left, status);
+    list.append(item);
+  });
+}
+</script>
+</body>
+</html>
