@@ -264,9 +264,28 @@ function goTo(id) {
   });
 }
 
-function connectWallet() {
-  document.getElementById("message").textContent =
-    "Wallet integration is not configured yet. Demo mode only.";
+async function connectWallet() {
+  const message = document.getElementById("message");
+
+  if (!window.solana) {
+    message.textContent =
+      "Solana wallet not detected. Open AssetForge in a compatible wallet browser.";
+    return;
+  }
+
+  try {
+    const response = await window.solana.connect();
+    walletConnected = true;
+
+    const address = response.publicKey.toString();
+
+    message.textContent =
+      "Wallet connected: " +
+      address.slice(0, 6) + "..." +
+      address.slice(-4);
+  } catch (error) {
+    message.textContent = "Wallet connection cancelled.";
+  }
 }
 
 document.getElementById("tokenForm").addEventListener(
