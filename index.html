@@ -283,6 +283,8 @@ async function connectWallet() {
       "Wallet connected: " +
       address.slice(0, 6) + "..." +
       address.slice(-4);
+const walletBtn = document.getElementById("walletBtn");
+walletBtn.textContent = address.slice(0, 6) + "..." + address.slice(-4);
   } catch (error) {
     message.textContent = "Wallet connection cancelled.";
   }
