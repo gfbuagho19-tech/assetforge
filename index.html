@@ -291,37 +291,215 @@ walletBtn.textContent = address.slice(0, 6) + "..." + address.slice(-4);
 }
 
 document.getElementById("tokenForm").addEventListener(
-  "submit", function(event) {
+  "submit",
+  async function (event) {
     event.preventDefault();
 
-    const name = document.getElementById("tokenName").value.trim();
-    const symbol = document.getElementById("symbol").value
-      .trim().toUpperCase();
-    const supply = Number(document.getElementById("supply").value);
+    const message = document.getElementById("message");
+
+    const name =
+      document.getElementById("tokenName").value.trim();
+
+    const symbol =
+      document.getElementById("symbol").value
+        .trim().toUpperCase();
+
+    const supply =
+      Number(document.getElementById("supply").value);
+
     const description =
       document.getElementById("description").value.trim();
 
     if (!name || !/^[A-Z0-9]{1,10}$/.test(symbol)) {
-      document.getElementById("message").textContent =
-        "Enter a name and a symbol using 1–10 letters or numbers.";
+      message.textContent =
+        "Enter a name and a symbol using 1-10 letters or numbers.";
       return;
     }
 
-    if (!Number.isSafeInteger(supply) || supply < 1 ||
-        supply > 1000000000000) {
-      document.getElementById("message").textContent =
+    if (
+      !Number.isSafeInteger(supply) ||
+      supply < 1 ||
+      supply > 1000000000000
+    ) {
+      message.textContent =
         "Enter a valid whole-number supply.";
       return;
     }
 
-    assets.push({ name, symbol, supply, description });
-    renderAssets();
+    try {
+      message.textContent =
+        "Preparing Solana token transaction...";
 
-    document.getElementById("message").textContent =
-      "Asset preview created successfully! Demo only.";
+      const {
+        Connection,
+        Keypair,
+        SystemProgram,
+        Transaction
+      } = await import(
+        "https://esm.sh/@solana/web3.js@1.98.4"
+      );
 
-    this.reset();
-    goTo("explore");
+      const spl = await import(
+        "https://esm.sh/@solana/spl-token@0.4.14"
+      );
+
+      const provider = window.solana;
+
+      if (!provider || !provider.publicKey) {
+        message.textContent =
+          "Please connect Phantom Wallet first.";
+        return;
+      }
+
+      const walletPublicKey = provider.publicKey;
+
+      const connection = new Connection(
+        "https://api.devnet.solana.com",
+        "confirmed"
+      );
+
+      const mint = Keypair.generate();
+
+      const decimals = 6;
+
+      const mintRent =
+        await connection.getMinimumBalanceForRentExemption(
+          spl.MINT_SIZE
+        );
+
+      const createMintTransaction =
+        new Transaction().add(
+          SystemProgram.createAccount({
+            fromPubkey: walletPublicKey,
+            newAccountPubkey: mint.publicKey,
+            space: spl.MINT_SIZE,
+            lamports: mintRent,
+            programId: spl.TOKEN_PROGRAM_ID
+          }),
+
+          spl.createInitializeMintInstruction(
+            mint.publicKey,
+            decimals,
+            walletPublicKey,
+            walletPublicKey,
+            spl.TOKEN_PROGRAM_ID
+          )
+        );
+
+      const latestBlockhash =
+        await connection.getLatestBlockhash(
+          "confirmed"
+        );
+
+      createMintTransaction.feePayer =
+        walletPublicKey;
+
+      createMintTransaction.recentBlockhash =
+        latestBlockhash.blockhash;
+
+      createMintTransaction.partialSign(mint);
+
+      const signedMintTransaction =
+        await provider.signTransaction(
+          createMintTransaction
+        );
+
+      const mintSignature =
+        await connection.sendRawTransaction(
+          signedMintTransaction.serialize()
+        );
+
+      await connection.confirmTransaction(
+        {
+          signature: mintSignature,
+          blockhash: latestBlockhash.blockhash,
+          lastValidBlockHeight:
+            latestBlockhash.lastValidBlockHeight
+        },
+        "confirmed"
+      );
+
+      const tokenAccount =
+        await spl.getAssociatedTokenAddress(
+          mint.publicKey,
+          walletPublicKey
+        );
+
+      const tokenAccountInfo =
+        await connection.getAccountInfo(
+          tokenAccount
+        );
+
+      const mintTransaction =
+        new Transaction();
+
+      if (!tokenAccountInfo) {
+        mintTransaction.add(
+          spl.createAssociatedTokenAccountInstruction(
+            walletPublicKey,
+            tokenAccount,
+            walletPublicKey,
+            mint.publicKey
+          )
+        );
+      }
+
+      const amount =
+        BigInt(supply) * 1000000n;
+
+      mintTransaction.add(
+        spl.createMintToInstruction(
+          mint.publicKey,
+          tokenAccount,
+          walletPublicKey,
+          amount
+        )
+      );
+
+      const mintBlockhash =
+        await connection.getLatestBlockhash(
+          "confirmed"
+        );
+
+      mintTransaction.feePayer =
+        walletPublicKey;
+
+      mintTransaction.recentBlockhash =
+        mintBlockhash.blockhash;
+
+      const signedMint =
+        await provider.signTransaction(
+          mintTransaction
+        );
+
+      const finalSignature =
+        await connection.sendRawTransaction(
+          signedMint.serialize()
+        );
+
+      await connection.confirmTransaction(
+        {
+          signature: finalSignature,
+          blockhash: mintBlockhash.blockhash,
+          lastValidBlockHeight:
+            mintBlockhash.lastValidBlockHeight
+        },
+        "confirmed"
+      );
+
+      message.textContent =
+        "Token created successfully! Mint: " +
+        mint.publicKey.toBase58();
+
+      document.getElementById("tokenForm").reset();
+
+    } catch (error) {
+      console.error(error);
+
+      message.textContent =
+        "Transaction failed: " +
+        (error.message || "Unknown error");
+    }
   }
 );
 
