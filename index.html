@@ -620,6 +620,7 @@
   import {
     Connection,
     Keypair,
+    PublicKey,
     SystemProgram,
     Transaction
   } from "https://esm.sh/@solana/web3.js@1.98.4";
@@ -633,7 +634,12 @@
     getAssociatedTokenAddress,
     createAssociatedTokenAccountInstruction,
     createMintToInstruction
-  } from "https://esm.sh/@solana/spl-token@0.4.14";
+  } from "https://esm.sh/@solana/spl-token@0.4
+.14"
+import {
+  PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID,
+  createCreateMetadataAccountV3Instruction
+} from "https://esm.sh/@metaplex-foundation/mpl-token-metadata@2";
 
 
   const DEVNET_RPC =
@@ -645,10 +651,90 @@
       DEVNET_RPC,
       "confirmed"
     );
+const EXISTING_MINT = new PublicKey(
+  "G4o2X9a7oMNJ2PeE2CR42oLYvfFMqD1otay1XYmHXZr"
+);
 
 
   let provider = null;
   let walletPublicKey = null;
+
+async function addMetadata() {
+  const provider = getProvider();
+
+  if (!provider) {
+    throw new Error("Phantom tidak ditemukan.");
+  }
+
+  if (!provider.publicKey) {
+    await provider.connect();
+  }
+
+  const wallet = new PublicKey(provider.publicKey.toString());
+
+  const [metadataPda] = PublicKey.findProgramAddressSync(
+    [
+      new TextEncoder().encode("metadata"),
+      TOKEN_METADATA_PROGRAM_ID.toBytes(),
+      EXISTING_MINT.toBytes()
+    ],
+    TOKEN_METADATA_PROGRAM_ID
+  );
+
+  const instruction =
+    createCreateMetadataAccountV3Instruction(
+  {
+    metadata: metadataPda,
+    mint: EXISTING_MINT,
+    mintAuthority: wallet,
+    payer: wallet,
+    updateAuthority: wallet
+  },
+  {
+    createMetadataAccountArgsV3: {
+      data: {
+        name: "AssetForge Token",
+        symbol: "AFT",
+        uri: "https://gfbuagho19-tech.github.io/assetforge/token-metadata.json",
+        sellerFeeBasisPoints: 0,
+        creators: null,
+        collection: null,
+        uses: null
+      },
+      isMutable: true,
+      collectionDetails: null
+    }
+  }
+);
+  const transaction = new Transaction().add(instruction);
+
+  const { blockhash, lastValidBlockHeight } =
+    await connection.getLatestBlockhash("confirmed");
+
+  transaction.recentBlockhash = blockhash;
+  transaction.feePayer = wallet;
+
+  const signed = await provider.signTransaction(transaction);
+
+  const signature = await connection.sendRawTransaction(
+    signed.serialize(),
+    {
+      skipPreflight: false,
+      maxRetries: 3
+    }
+  );
+
+  await connection.confirmTransaction(
+    {
+      signature,
+      blockhash,
+      lastValidBlockHeight
+    },
+    "confirmed"
+  );
+
+  alert("Metadata AssetForge Token (AFT) berhasil ditambahkan!");
+}
 
 
   const assets = [];
@@ -1266,6 +1352,10 @@
     "click",
     createToken
   );
+const metadataButton = document.createElement("button");
+metadataButton.textContent = "Add AFT Metadata";
+metadataButton.onclick = addMetadata;
+document.body.appendChild(metadataButton);
 
 
   function renderAssets() {
