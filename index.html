@@ -1238,4 +1238,196 @@
           .toLowerCase()
           .includes("blockhash not found")
       ) {
+        errorText =
+          "Blockhash kedaluwarsa. Jangan menunggu terlalu lama saat konfirmasi Phantom. Silakan klik Create Token lagi.";
+
+      }
+
+      showMessage(
+        "Transaksi gagal: " +
+        errorText,
+        "error"
+      );
+
+    } finally {
+
+      createButton.disabled =
+        !walletPublicKey;
+
+      connectButton.disabled =
+        false;
+
+    }
+
+  }
+
+
+  createButton.addEventListener(
+    "click",
+    createToken
+  );
+
+
+  function renderAssets() {
+
+    assetList.innerHTML = "";
+
+
+    if (assets.length === 0) {
+
+      const empty =
+        document.createElement("div");
+
+      empty.className =
+        "empty";
+
+      empty.textContent =
+        "Belum ada token yang dibuat pada sesi ini.";
+
+      assetList.appendChild(
+        empty
+      );
+
+      return;
+    }
+
+
+    assets.forEach(
+      (asset) => {
+
+        const item =
+          document.createElement("div");
+
+        item.className =
+          "asset-item";
+
+
+        const left =
+          document.createElement("div");
+
+        left.className =
+          "asset-info";
+
+
+        const name =
+          document.createElement("div");
+
+        name.className =
+          "asset-name";
+
+        name.textContent =
+          asset.name +
+          " (" +
+          asset.symbol +
+          ")";
+
+
+        const meta =
+          document.createElement("div");
+
+        meta.className =
+          "asset-meta";
+
+        meta.textContent =
+          "Supply: " +
+          asset.supply +
+          " • Mint: " +
+          shortAddress(asset.mint);
+
+
+        const explorer =
+          document.createElement("a");
+
+        explorer.href =
+          "https://explorer.solana.com/address/" +
+          asset.mint +
+          "?cluster=devnet";
+
+        explorer.target =
+          "_blank";
+
+        explorer.rel =
+          "noopener noreferrer";
+
+        explorer.textContent =
+          "Explorer";
+
+        explorer.style.display =
+          "inline-block";
+
+        explorer.style.marginTop =
+          "7px";
+
+        explorer.style.color =
+          "#a78bfa";
+
+
+        left.appendChild(name);
+        left.appendChild(meta);
+        left.appendChild(explorer);
+
+
+        const status =
+          document.createElement("span");
+
+        status.className =
+          "status";
+
+        status.textContent =
+          "ON-CHAIN";
+
+
+        item.append(
+          left,
+          status
+        );
+
+        assetList.appendChild(
+          item
+        );
+
+      }
+    );
+
+  }
+
+
+  renderAssets();
+
+
+  provider =
+    getProvider();
+
+
+  if (
+    provider &&
+    provider.isConnected &&
+    provider.publicKey
+  ) {
+
+    walletPublicKey =
+      provider.publicKey;
+
+
+    walletStatus.textContent =
+      "Connected: " +
+      walletPublicKey.toString();
+
+
+    connectButton.textContent =
+      shortAddress(
+        walletPublicKey.toString()
+      );
+
+
+    createButton.disabled =
+      false;
+
+  }
+
+
+</script>
+
+</body>
+</html>
 
