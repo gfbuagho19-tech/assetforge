@@ -694,7 +694,9 @@ if (existingMetadata) {
     mint: EXISTING_MINT,
     mintAuthority: wallet,
     payer: wallet,
-    updateAuthority: wallet
+    updateAuthority: wallet,
+systemProgram: SystemProgram.programId,
+rent: SYSVAR_RENT_PUBKEY
   },
   {
     createMetadataAccountArgsV3: {
