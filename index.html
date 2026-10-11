@@ -678,7 +678,8 @@ async function addMetadata() {
       EXISTING_MINT.toBytes()
     ],
     TOKEN_METADATA_PROGRAM_ID
-  );const existingMetadata = await connection.getAccountInfo(metadataPda);
+  );
+const existingMetadata = await      connection.getAccountInfo(metadataPda);
 
 if (existingMetadata) {
   alert("Metadata sudah ada.");
