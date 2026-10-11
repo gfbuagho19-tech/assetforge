@@ -1206,8 +1206,8 @@ rent: SYSVAR_RENT_PUBKEY
        */
 
       const amount =
-        BigInt(form.supply) *
-        BigInt(10 ** decimals);
+      BigInt(form.supply) *
+      (10n ** BigInt(decimals));
 
 
       transaction2.add(
