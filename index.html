@@ -661,88 +661,148 @@ const EXISTING_MINT = new PublicKey(
   let walletPublicKey = null;
 
 async function addMetadata() {
-  const provider = getProvider();
+  try {
+    provider = getProvider();
 
-  if (!provider) {
-    throw new Error("Phantom tidak ditemukan.");
-  }
+    if (!provider) {
+      throw new Error("Phantom tidak ditemukan.");
+    }
 
-  if (!provider.publicKey) {
-    await provider.connect();
-  }
+    let response;
 
-  const wallet = new PublicKey(provider.publicKey.toString());
+    if (!provider.publicKey) {
+      response = await provider.connect();
+    }
 
-  const [metadataPda] = PublicKey.findProgramAddressSync(
-    [
-      new TextEncoder().encode("metadata"),
-      TOKEN_METADATA_PROGRAM_ID.toBytes(),
-      EXISTING_MINT.toBytes()
-    ],
-    TOKEN_METADATA_PROGRAM_ID
-  );
-const existingMetadata = await      connection.getAccountInfo(metadataPda);
+    const publicKey = provider.publicKey || response?.publicKey;
 
-if (existingMetadata) {
-  alert("Metadata sudah ada.");
-  return;
-}
+    if (!publicKey) {
+      throw new Error("Gagal mendapatkan alamat wallet Phantom.");
+    }
 
-  const instruction =
-    createCreateMetadataAccountV3Instruction(
-  {
-    metadata: metadataPda,
-    mint: EXISTING_MINT,
-    mintAuthority: wallet,
-    payer: wallet,
-    updateAuthority: wallet,
-systemProgram: SystemProgram.programId,
-rent: SYSVAR_RENT_PUBKEY
-  },
-  {
-    createMetadataAccountArgsV3: {
-      data: {
-        name: "AssetForge Token",
-        symbol: "AFT",
-        uri: "https://gfbuagho19-tech.github.io/assetforge/token-metadata.json",
-        sellerFeeBasisPoints: 0,
-        creators: null,
-        collection: null,
-        uses: null
+    const wallet = new PublicKey(publicKey.toString());
+
+    // Pastikan mint AFT benar-benar ada di Devnet
+    const mintInfo = await connection.getAccountInfo(EXISTING_MINT);
+
+    if (!mintInfo) {
+      throw new Error("Mint AFT tidak ditemukan di Devnet.");
+    }
+
+    if (!mintInfo.owner.equals(TOKEN_PROGRAM_ID)) {
+      throw new Error("Alamat AFT bukan mint SPL Token yang valid.");
+    }
+
+    // Pastikan wallet memiliki mint authority
+    const mintData = await connection.getParsedAccountInfo(EXISTING_MINT);
+
+    const mintAuthority =
+      mintData.value?.data?.parsed?.info?.mintAuthority;
+
+    if (mintAuthority !== wallet.toBase58()) {
+      throw new Error(
+        "Wallet Phantom ini bukan mint authority AFT."
+      );
+    }
+
+    // Hitung alamat metadata untuk mint AFT yang sudah ada
+    const [metadataPda] = PublicKey.findProgramAddressSync(
+      [
+        new TextEncoder().encode("metadata"),
+        TOKEN_METADATA_PROGRAM_ID.toBytes(),
+        EXISTING_MINT.toBytes()
+      ],
+      TOKEN_METADATA_PROGRAM_ID
+    );
+
+    const existingMetadata =
+      await connection.getAccountInfo(metadataPda);
+
+    if (existingMetadata) {
+      throw new Error(
+        "Akun metadata sudah ada. Periksa isinya sebelum melanjutkan."
+      );
+    }
+
+    // Siapkan metadata AFT
+    const instruction = createCreateMetadataAccountV3Instruction(
+      {
+        metadata: metadataPda,
+        mint: EXISTING_MINT,
+        mintAuthority: wallet,
+        payer: wallet,
+        updateAuthority: wallet,
+        systemProgram: SystemProgram.programId,
+        rent: SYSVAR_RENT_PUBKEY
       },
-      isMutable: true,
-      collectionDetails: null
+      {
+        createMetadataAccountArgsV3: {
+          data: {
+            name: "AssetForge Token",
+            symbol: "AFT",
+            uri: "https://gfbuagho19-tech.github.io/assetforge/token-metadata.json",
+            sellerFeeBasisPoints: 0,
+            creators: null,
+            collection: null,
+            uses: null
+          },
+          isMutable: true,
+          collectionDetails: null
+        }
+      }
+    );
+
+    const transaction = new Transaction().add(instruction);
+
+    const latest = await connection.getLatestBlockhash("confirmed");
+
+    transaction.recentBlockhash = latest.blockhash;
+    transaction.feePayer = wallet;
+
+    showMessage(
+      "Periksa dan konfirmasi transaksi metadata di Phantom.",
+      "info"
+    );
+
+    const signed = await provider.signTransaction(transaction);
+
+    const signature = await connection.sendRawTransaction(
+      signed.serialize(),
+      {
+        skipPreflight: false,
+        maxRetries: 3
+      }
+    );
+
+    const confirmation = await connection.confirmTransaction(
+      {
+        signature,
+        blockhash: latest.blockhash,
+        lastValidBlockHeight: latest.lastValidBlockHeight
+      },
+      "confirmed"
+    );
+
+    if (confirmation.value.err) {
+      throw new Error(
+        "Transaksi gagal: " + JSON.stringify(confirmation.value.err)
+      );
     }
+
+    showMessage(
+      "Metadata AFT berhasil dibuat. Signature: " + signature,
+      "success"
+    );
+
+  } catch (error) {
+    console.error("ADD METADATA ERROR:", error);
+
+    showMessage(
+      "Gagal menambahkan metadata: " +
+        (error?.message || String(error)),
+      "error"
+    );
   }
-);
-  const transaction = new Transaction().add(instruction);
-
-  const { blockhash, lastValidBlockHeight } =
-    await connection.getLatestBlockhash("confirmed");
-
-  transaction.recentBlockhash = blockhash;
-  transaction.feePayer = wallet;
-
-  const signed = await provider.signTransaction(transaction);
-
-  const signature = await connection.sendRawTransaction(
-    signed.serialize(),
-    {
-      skipPreflight: false,
-      maxRetries: 3
-    }
-  );
-
-  await connection.confirmTransaction(
-    {
-      signature,
-      blockhash,
-      lastValidBlockHeight
-    },
-    "confirmed"
-  );
-
-  alert("Metadata AssetForge Token (AFT) berhasil ditambahkan!");
 }
 
 
