@@ -1303,77 +1303,85 @@ async function addMetadata() {
 
 
       /*
-       * SUCCESS
-       */
+ * STEP 4 — CREATE METADATA
+ */
 
-      const mintAddress =
-        mint.publicKey.toBase58();
+showMessage("Membuat metadata token AFT...", "info");
 
+const [metadataPda] = PublicKey.findProgramAddressSync(
+  [
+    new TextEncoder().encode("metadata"),
+    TOKEN_METADATA_PROGRAM_ID.toBytes(),
+    mint.publicKey.toBytes()
+  ],
+  TOKEN_METADATA_PROGRAM_ID
+);
 
-      const explorerUrl =
-        "https://explorer.solana.com/address/" +
-        mintAddress +
-        "?cluster=devnet";
+const metadataInstruction =
+  createCreateMetadataAccountV3Instruction(
+    {
+      metadata: metadataPda,
+      mint: mint.publicKey,
+      mintAuthority: walletPublicKey,
+      payer: walletPublicKey,
+      updateAuthority: walletPublicKey,
+      systemProgram: SystemProgram.programId,
+      rent: SYSVAR_RENT_PUBKEY
+    },
+    {
+      createMetadataAccountArgsV3: {
+        data: {
+          name: form.name,
+          symbol: form.symbol,
+          uri: "https://gfbuagho19-tech.github.io/assetforge/token-metadata.json",
+          sellerFeeBasisPoints: 0,
+          creators: null,
+          collection: null,
+          uses: null
+        },
+        isMutable: true,
+        collectionDetails: null
+      }
+    }
+  );
 
+const metadataTx = new Transaction().add(metadataInstruction);
 
-      mintAddressBox.textContent =
-        mintAddress;
+const metadataSignature =
+  await sendTransactionWithFreshBlockhash(metadataTx);
 
+console.log("Metadata transaction:", metadataSignature);
 
-      explorerLink.href =
-        explorerUrl;
+/* SUCCESS */
 
+const mintAddress = mint.publicKey.toBase58();
 
-      resultBox.style.display =
-        "block";
+currentMint = mintAddress;
 
+mintAddressBox.textContent = mintAddress;
 
-      showMessage(
-        "Token berhasil dibuat di Solana Devnet.",
-        "success"
-      );
+explorerLink.href =
+  "https://explorer.solana.com/address/" +
+  mintAddress +
+  "?cluster=devnet";
 
+resultBox.style.display = "block";
 
-      assets.push({
-        name: form.name,
-        symbol: form.symbol,
-        supply: form.supply,
-        description:
-          document
-            .getElementById("tokenDescription")
-            .value
-            .trim(),
-        mint: mintAddress,
-        signature:
-          mintSupplySignature
-      });
+showMessage(
+  "Token dan metadata berhasil dibuat di Devnet.",
+  "success"
+);
 
+assets.push({
+  name: form.name,
+  symbol: form.symbol,
+  supply: form.supply,
+  description: document.getElementById("tokenDescription").value.trim(),
+  mint: mintAddress,
+  signature: metadataSignature
+});
 
-      renderAssets();
-
-
-      document
-        .getElementById("tokenName")
-        .value =
-        "AssetForge Token";
-
-
-      document
-        .getElementById("tokenSymbol")
-        .value =
-        "AFT";
-
-
-      document
-        .getElementById("tokenSupply")
-        .value =
-        "1000000";
-
-
-      document
-        .getElementById("tokenDescription")
-        .value =
-        "AssetForge ecosystem utility token on Solana Devnet";
+renderAssets();
 
 
     } catch (error) {
